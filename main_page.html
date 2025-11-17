@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="Task Planner main page" />
+    <title>Task Planner</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <header>
+        <h1>Task Planner</h1>
+    </header>
+
+    <main id="app">
+        <!-- Main application content goes here -->
+    </main>
+
+    <footer>
+        <small>&copy; <span id="year"></span> Task Planner</small>
+    </footer>
+
+    <script>
+        // Small helper to set current year
+        document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
+    <script src="main.js" defer></script>
+</body>
+</html>
