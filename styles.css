@@ -19,6 +19,23 @@ html, body {height:100%}
 
 .date-display{margin:12px 0; font-size:0.95rem}
 
+/* Calendar Styles */
+.calendar-container{max-width:600px; margin:20px 0}
+.calendar-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:20px}
+.calendar-header h3{margin:0; font-size:1.3rem}
+.calendar-nav-btn{background:#8241d8; color:#fff; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-size:1rem}
+.calendar-nav-btn:hover{background:#6a2db0}
+
+.calendar-weekdays{display:grid; grid-template-columns:repeat(7, 1fr); gap:8px; margin-bottom:8px}
+.weekday{text-align:center; font-weight:bold; padding:10px; color:#666}
+
+.calendar-days{display:grid; grid-template-columns:repeat(7, 1fr); gap:8px}
+.calendar-day{padding:12px; text-align:center; border:1px solid #e0e0e0; border-radius:6px; cursor:pointer; background:#fff}
+.calendar-day:hover{background:#f0e7ff}
+.calendar-day.other-month{color:#ccc; background:#fafafa}
+.calendar-day.today{background:#8241d8; color:#fff; font-weight:bold}
+.calendar-day.today:hover{background:#6a2db0}
+
 @media(max-width:600px){
 	.app{flex-direction:column}
 	.sidebar{width:100%; height:auto; position:static}
