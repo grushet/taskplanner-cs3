@@ -230,6 +230,31 @@ html, body {height:100%}
 
 .task-input::placeholder { color: #8a8a8a; }
 
+/* Task list visuals */
+.task-list { list-style:none; padding:0; margin:12px 0 0 0; max-width:720px; }
+.task-item{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:10px 12px;
+    border-radius:10px;
+    margin-bottom:8px;
+    background: rgba(255,255,255,0.02);
+    color: #e6e6e6;
+}
+.task-checkbox{ width:18px; height:18px; flex:0 0 auto; }
+.task-label{ cursor:pointer; flex:1; }
+
+.task-item.completed{ background: rgba(0,0,0,0.12); }
+.task-item.completed .task-label{
+    
+    color:#535353;
+}
+
+.task-item .task-label{ word-break: break-word; }
+
+.task-item:focus-within{ box-shadow: 0 6px 18px rgba(0,0,0,0.12); }
+
 
 /* Sat helper tab */
 .section-subtitle {
@@ -245,7 +270,7 @@ html, body {height:100%}
 .cta-sat-button {
     display: inline-block;
     padding: 10px 16px;
-    background: linear-gradient(135deg, #67b4be 0%, #2b8bb8 100%);;
+    background: linear-gradient(135deg, #67b4be 0%, #2b8bb8 100%);
     color:#fff;
     border-radius:10px;
     text-decoration:none;

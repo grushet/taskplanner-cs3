@@ -111,4 +111,103 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	// Initial calendar render
 	renderCalendar();
+
+	// ===== Task list functionality ===== \\
+
+	const TASKS_KEY = 'tasks';
+	let tasks = [];
+
+	const taskInput = document.getElementById('new-task-input');
+	const taskListEl = document.getElementById('task-list');
+
+	function loadTasks() {
+		try {
+			const raw = localStorage.getItem(TASKS_KEY);
+			return raw ? JSON.parse(raw) : [];
+		} catch (e) {
+			console.warn('Failed to parse tasks from storage, resetting.', e);
+			localStorage.removeItem(TASKS_KEY);
+			return [];
+		}
+	}
+
+	function saveTasks() {
+		localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
+	}
+
+	function renderTasks() {
+		if (!taskListEl) return;
+		taskListEl.innerHTML = '';
+		tasks.forEach(task => {
+			const li = document.createElement('li');
+			li.className = 'task-item';
+			if (task.completed) li.classList.add('completed');
+
+			// checkbox
+			const checkbox = document.createElement('input');
+			checkbox.type = 'checkbox';
+			checkbox.id = `task-${task.id}`;
+			checkbox.dataset.id = task.id;
+			checkbox.checked = !!task.completed;
+			checkbox.className = 'task-checkbox';
+
+			// label
+			const label = document.createElement('label');
+			label.htmlFor = checkbox.id;
+			label.textContent = task.text;
+			label.className = 'task-label';
+
+			li.appendChild(checkbox);
+			li.appendChild(label);
+			taskListEl.appendChild(li);
+		});
+	}
+
+	function addTask(text) {
+		const trimmed = String(text || '').trim();
+		if (!trimmed) return;
+		const task = { id: Date.now(), text: trimmed, completed: false, createdAt: Date.now() };
+		tasks.unshift(task);
+		saveTasks();
+		renderTasks();
+	}
+
+	function toggleTask(id, completed) {
+		const idx = tasks.findIndex(t => String(t.id) === String(id));
+		if (idx === -1) return;
+		tasks[idx].completed = !!completed;
+		saveTasks();
+		renderTasks();
+	}
+
+	// load & initial render
+	tasks = loadTasks();
+	renderTasks();
+
+	// press enter to add
+	if (taskInput) {
+		taskInput.addEventListener('keydown', (e) => {
+			if (e.key === 'Enter') {
+				e.preventDefault();
+				const val = taskInput.value;
+				if (val && val.trim()) {
+					addTask(val);
+					taskInput.value = '';
+					taskInput.focus();
+				}
+			}
+		});
+	}
+
+	// checkbox handling
+	if (taskListEl) {
+		taskListEl.addEventListener('change', (e) => {
+			const target = e.target;
+			if (target && target.matches('input[type="checkbox"].task-checkbox')) {
+				const id = target.dataset.id;
+				toggleTask(id, target.checked);
+			}
+		});
+	}
+
 });
