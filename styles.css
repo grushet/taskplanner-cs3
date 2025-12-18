@@ -230,6 +230,8 @@ html, body {height:100%}
 
 .task-input::placeholder { color: #8a8a8a; }
 
+
+
 /* Task list visuals */
 .task-list { list-style:none; padding:0; margin:12px 0 0 0; max-width:720px; }
 .task-item{
@@ -252,6 +254,38 @@ html, body {height:100%}
 }
 
 .task-item .task-label{ word-break: break-word; }
+
+/* date badge rendered in the task item */
+.task-date-badge{
+    margin-left:auto;
+    font-size:0.85rem;
+    color:#cfcfcf;
+    background: rgba(255,255,255,0.03);
+    padding:6px 8px;
+    border-radius:8px;
+    border: 1px solid rgba(255,255,255,0.04);
+}
+
+.task-date-add{
+    margin-left:auto;
+    font-size:0.85rem;
+    color:#9fd5ff;
+    background: rgba(255,255,255,0.02);
+    padding:6px 8px;
+    border-radius:8px;
+    border: 1px dashed rgba(255,255,255,0.04);
+    cursor:pointer;
+}
+
+.task-date-editor{
+    margin-left:auto;
+    padding:6px 8px;
+    border-radius:8px;
+    border: 1px solid rgba(0,0,0,0.08);
+    background:#4a4949;
+    color:#d0d0d0;
+    font-size:0.9rem;
+}
 
 .task-item:focus-within{ box-shadow: 0 6px 18px rgba(0,0,0,0.12); }
 

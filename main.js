@@ -120,6 +120,8 @@ document.addEventListener('DOMContentLoaded', () => {
 	const taskInput = document.getElementById('new-task-input');
 	const taskListEl = document.getElementById('task-list');
 
+	// date input is optional — leave empty by default so user can enter a date if desired
+
 	function loadTasks() {
 		try {
 			const raw = localStorage.getItem(TASKS_KEY);
@@ -159,14 +161,65 @@ document.addEventListener('DOMContentLoaded', () => {
 
 			li.appendChild(checkbox);
 			li.appendChild(label);
+			// date badge or 'add date' affordance
+			if (task.dueDate) {
+				const badge = document.createElement('span');
+				badge.className = 'task-date-badge';
+				badge.tabIndex = 0;
+				badge.title = new Date(task.dueDate).toLocaleDateString();
+				badge.textContent = formatTaskDateDisplay(task.dueDate);
+				// click or Enter on badge to edit
+				badge.addEventListener('click', () => startEditingDate(task));
+				badge.addEventListener('keydown', (e) => { if (e.key === 'Enter') startEditingDate(task); });
+				li.appendChild(badge);
+			} else {
+				const add = document.createElement('button');
+				add.type = 'button';
+				add.className = 'task-date-add';
+				add.textContent = '+ Add date';
+				add.addEventListener('click', () => startEditingDate(task));
+				li.appendChild(add);
+			}
 			taskListEl.appendChild(li);
+		});
+	}
+
+	function startEditingDate(task) {
+		// find the task's list item and replace the display with a date input
+		const li = taskListEl.querySelector(`input[data-id="${task.id}"]`)?.closest('.task-item');
+		if (!li) return;
+		const existingBadge = li.querySelector('.task-date-badge, .task-date-add');
+		const input = document.createElement('input');
+		input.type = 'date';
+		input.className = 'task-date-editor';
+		input.value = task.dueDate || '';
+		// replace badge/add-button with the editor
+		if (existingBadge) existingBadge.replaceWith(input);
+		input.focus();
+
+		function commit() {
+			const val = input.value || null;
+			tasks = tasks.map(t => t.id === task.id ? Object.assign({}, t, { dueDate: val }) : t);
+			saveTasks();
+			renderTasks();
+		}
+
+		function cancel() {
+			renderTasks();
+		}
+
+		input.addEventListener('blur', commit);
+		input.addEventListener('keydown', (e) => {
+			if (e.key === 'Enter') { e.preventDefault(); commit(); }
+			if (e.key === 'Escape') { e.preventDefault(); cancel(); }
 		});
 	}
 
 	function addTask(text) {
 		const trimmed = String(text || '').trim();
 		if (!trimmed) return;
-		const task = { id: Date.now(), text: trimmed, completed: false, createdAt: Date.now() };
+		// due date is optional and can be added inline after creation
+		const task = { id: Date.now(), text: trimmed, completed: false, createdAt: Date.now(), dueDate: null };
 		tasks.unshift(task);
 		saveTasks();
 		renderTasks();
@@ -178,6 +231,39 @@ document.addEventListener('DOMContentLoaded', () => {
 		tasks[idx].completed = !!completed;
 		saveTasks();
 		renderTasks();
+	}
+
+	// helpers: parse YYYY-MM-DD to local Date (avoid timezone shift)
+	function parseDateYMD(ymd) {
+		if (!ymd) return null;
+		const parts = String(ymd).split('-');
+		if (parts.length !== 3) return null;
+		const y = parseInt(parts[0], 10);
+		const m = parseInt(parts[1], 10) - 1;
+		const d = parseInt(parts[2], 10);
+		return new Date(y, m, d);
+	}
+
+	function startOfWeekMon(date) {
+		const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+		const day = (d.getDay() + 6) % 7; // 0=Mondayshift
+		d.setDate(d.getDate() - day);
+		d.setHours(0,0,0,0);
+		return d;
+	}
+
+	function formatTaskDateDisplay(ymd) {
+		const d = parseDateYMD(ymd);
+		if (!d) return '';
+		const today = new Date();
+		const inSameWeek = startOfWeekMon(d).getTime() === startOfWeekMon(today).getTime();
+		const day = d.getDay(); // 0 Sun .. 6 Sat
+		const weekdayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+		if (inSameWeek && day >= 1 && day <= 5) {
+			return weekdayNames[day];
+		}
+		// else show month day
+		return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 	}
 
 	// load & initial render
