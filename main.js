@@ -68,21 +68,52 @@ document.addEventListener('DOMContentLoaded', () => {
 
 		// Previous month's days
 		for (let i = firstDay - 1; i >= 0; i--) {
+			const dayNum = daysInPrevMonth - i;
+			const dateObj = new Date(year, month - 1, dayNum);
 			const dayDiv = document.createElement('div');
 			dayDiv.className = 'calendar-day other-month';
-			dayDiv.textContent = daysInPrevMonth - i;
+			dayDiv.textContent = dayNum;
+			dayDiv.dataset.date = ymdFromDate(dateObj);
+			// mark whether there are tasks for this date and whether they're all completed
+			if (tasks) {
+				const matches = tasks.filter(t => t.dueDate === dayDiv.dataset.date);
+				if (!matches.length) {
+					dayDiv.classList.add('no-task');
+				} else if (matches.every(t => t.completed)) {
+					dayDiv.classList.add('tasks-completed');
+				} else {
+					dayDiv.classList.add('has-task');
+				}
+			}
 			calendarDaysEl.appendChild(dayDiv);
 		}
 
 		// Current month's days
 		for (let day = 1; day <= daysInMonth; day++) {
+			const dateObj = new Date(year, month, day);
 			const dayDiv = document.createElement('div');
 			dayDiv.className = 'calendar-day';
 			dayDiv.textContent = day;
+			dayDiv.dataset.date = ymdFromDate(dateObj);
+			if (tasks) {
+				const matches = tasks.filter(t => t.dueDate === dayDiv.dataset.date);
+				if (!matches.length) {
+					dayDiv.classList.add('no-task');
+				} else if (matches.every(t => t.completed)) {
+					dayDiv.classList.add('tasks-completed');
+				} else {
+					dayDiv.classList.add('has-task');
+				}
+			}
 
 			// Highlight today
 			if (day === now.getDate() && month === now.getMonth() && year === now.getFullYear()) {
 				dayDiv.classList.add('today');
+			}
+
+			// Highlight selected day
+			if (selectedDate && dayDiv.dataset.date === selectedDate) {
+				dayDiv.classList.add('selected-day');
 			}
 
 			calendarDaysEl.appendChild(dayDiv);
@@ -92,11 +123,153 @@ document.addEventListener('DOMContentLoaded', () => {
 		const totalCells = calendarDaysEl.children.length;
 		const remainingCells = 42 - totalCells; // 6 rows * 7 days
 		for (let day = 1; day <= remainingCells; day++) {
+			const dateObj = new Date(year, month + 1, day);
 			const dayDiv = document.createElement('div');
 			dayDiv.className = 'calendar-day other-month';
 			dayDiv.textContent = day;
+			dayDiv.dataset.date = ymdFromDate(dateObj);
+			if (tasks) {
+				const matches = tasks.filter(t => t.dueDate === dayDiv.dataset.date);
+				if (!matches.length) {
+					dayDiv.classList.add('no-task');
+				} else if (matches.every(t => t.completed)) {
+					dayDiv.classList.add('tasks-completed');
+				} else {
+					dayDiv.classList.add('has-task');
+				}
+			}
 			calendarDaysEl.appendChild(dayDiv);
 		}
+
+		// add click handlers for date selection
+		Array.from(calendarDaysEl.querySelectorAll('.calendar-day')).forEach(d => {
+			d.addEventListener('click', () => {
+				// clear previous selection
+				const prev = calendarDaysEl.querySelector('.calendar-day.selected-day');
+				if (prev) prev.classList.remove('selected-day');
+				d.classList.add('selected-day');
+				selectedDate = d.dataset.date || null;
+				renderDayTasks();
+			});
+		});
+	}
+
+	// helper to convert Date to YYYY-MM-DD local format
+	function ymdFromDate(date) {
+		if (!date) return null;
+		const y = date.getFullYear();
+		const m = String(date.getMonth() + 1).padStart(2, '0');
+		const d = String(date.getDate()).padStart(2, '0');
+		return `${y}-${m}-${d}`;
+	}
+
+	// render tasks for the currently selected day
+	const dayTasksEl = document.getElementById('day-tasks');
+
+	let selectedDate = ymdFromDate(now); // default to today
+
+	function renderDayTasks() {
+		if (!dayTasksEl) return;
+		const title = document.createElement('h4');
+		const dateObj = parseDateYMD(selectedDate);
+		const isToday = selectedDate === ymdFromDate(now);
+		if (isToday) title.textContent = 'Tasks for Today';
+		else title.textContent = `Tasks for ${dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+		const container = document.createElement('div');
+		container.appendChild(title);
+
+		// Add task for selected date control
+		const addRow = document.createElement('div');
+		addRow.className = 'day-add-row';
+		const addBtn = document.createElement('button');
+		addBtn.type = 'button';
+		addBtn.className = 'day-add-btn';
+		addBtn.textContent = '+ Add task for selected date';
+		addRow.appendChild(addBtn);
+		container.appendChild(addRow);
+
+		function startAddInline() {
+			const input = document.createElement('input');
+			input.type = 'text';
+			input.placeholder = 'New task...';
+			input.className = 'day-add-input';
+			// replace button with input
+			addRow.replaceChild(input, addBtn);
+			input.focus();
+
+			function commit() {
+				const val = (input.value || '').trim();
+				if (val) {
+					addTaskWithDate(val, selectedDate);
+				}
+				renderDayTasks();
+			}
+
+			function cancel() {
+				// restore button
+				if (addRow.contains(input)) addRow.replaceChild(addBtn, input);
+			}
+
+			input.addEventListener('keydown', (e) => {
+				if (e.key === 'Enter') { e.preventDefault(); commit(); }
+				if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+			});
+			input.addEventListener('blur', () => { setTimeout(commit, 50); });
+		}
+
+		addBtn.addEventListener('click', startAddInline);
+
+		const matches = tasks.filter(t => t.dueDate === selectedDate);
+		if (!matches.length) {
+			const p = document.createElement('div');
+			p.className = 'no-tasks';
+			p.textContent = isToday ? 'No tasks scheduled for today' : 'No tasks scheduled for this day';
+			container.appendChild(p);
+		} else {
+			const ul = document.createElement('ul');
+			matches.forEach(task => {
+				const li = document.createElement('li');
+				// reflect completed state in the row so we can style it (cross-out, dim, etc.)
+				li.className = 'day-task-item' + (task.completed ? ' completed' : '');
+				const cb = document.createElement('input');
+				cb.type = 'checkbox';
+				cb.className = 'task-checkbox';
+				cb.dataset.id = task.id;
+				cb.checked = !!task.completed;
+				const lbl = document.createElement('span');
+				lbl.className = 'task-label';
+				lbl.textContent = task.text;
+				li.appendChild(cb);
+				li.appendChild(lbl);
+				ul.appendChild(li);
+			});
+			container.appendChild(ul);
+		}
+
+		function addTaskWithDate(text, ymd) {
+			const trimmed = String(text || '').trim();
+			if (!trimmed) return;
+			const task = { id: Date.now(), text: trimmed, completed: false, createdAt: Date.now(), dueDate: ymd || null };
+			tasks.unshift(task);
+			saveTasks();
+			renderTasks();
+			renderCalendar();
+			renderDayTasks();
+		}
+		dayTasksEl.innerHTML = '';
+		dayTasksEl.appendChild(container);
+	}
+
+	// listen for check toggles inside dayTasks
+	if (dayTasksEl) {
+		dayTasksEl.addEventListener('change', (e) => {
+			const t = e.target;
+			if (t && t.matches('input[type="checkbox"].task-checkbox')) {
+				toggleTask(t.dataset.id, t.checked);
+				// toggleTask will call renderTasks() and save; re-render day tasks
+				renderDayTasks();
+			}
+		});
 	}
 
 	prevMonthBtn.addEventListener('click', () => {
@@ -109,8 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		renderCalendar();
 	});
 
-	// Initial calendar render
-	renderCalendar();
+	// Initial calendar render will happen after tasks are loaded so day cells can reflect task presence
 
 	// ===== Task list functionality ===== \\
 
@@ -202,6 +374,8 @@ document.addEventListener('DOMContentLoaded', () => {
 			tasks = tasks.map(t => t.id === task.id ? Object.assign({}, t, { dueDate: val }) : t);
 			saveTasks();
 			renderTasks();
+			renderCalendar();
+			renderDayTasks();
 		}
 
 		function cancel() {
@@ -223,6 +397,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		tasks.unshift(task);
 		saveTasks();
 		renderTasks();
+		renderCalendar();
 	}
 
 	function toggleTask(id, completed) {
@@ -231,6 +406,8 @@ document.addEventListener('DOMContentLoaded', () => {
 		tasks[idx].completed = !!completed;
 		saveTasks();
 		renderTasks();
+		renderCalendar();
+		renderDayTasks();
 	}
 
 	// helpers: parse YYYY-MM-DD to local Date (avoid timezone shift)
@@ -269,6 +446,10 @@ document.addEventListener('DOMContentLoaded', () => {
 	// load & initial render
 	tasks = loadTasks();
 	renderTasks();
+
+	// Render calendar now that tasks are loaded so we can mark days correctly
+	renderCalendar();
+	renderDayTasks();
 
 	// press enter to add
 	if (taskInput) {
