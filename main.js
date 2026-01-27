@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		const addBtn = document.createElement('button');
 		addBtn.type = 'button';
 		addBtn.className = 'day-add-btn';
-		addBtn.textContent = '+ Add task for selected date';
+		addBtn.textContent = '+ Add task for this day';
 		addRow.appendChild(addBtn);
 		container.appendChild(addRow);
 
@@ -231,6 +231,9 @@ document.addEventListener('DOMContentLoaded', () => {
 				const li = document.createElement('li');
 				// reflect completed state in the row so we can style it (cross-out, dim, etc.)
 				li.className = 'day-task-item' + (task.completed ? ' completed' : '');
+				if (task.importance === 'high') li.classList.add('importance-high');
+				else if (task.importance === 'low') li.classList.add('importance-low');
+				
 				const cb = document.createElement('input');
 				cb.type = 'checkbox';
 				cb.className = 'task-checkbox';
@@ -241,6 +244,45 @@ document.addEventListener('DOMContentLoaded', () => {
 				lbl.textContent = task.text;
 				li.appendChild(cb);
 				li.appendChild(lbl);
+				
+				// importance dropdown for day task view
+				const impSelect = document.createElement('select');
+				impSelect.className = 'task-importance-select';
+				impSelect.dataset.id = task.id;
+				
+				const noneOpt = document.createElement('option');
+				noneOpt.value = '';
+				noneOpt.textContent = '—';
+				noneOpt.selected = !task.importance;
+				impSelect.appendChild(noneOpt);
+				
+				const highOpt = document.createElement('option');
+				highOpt.value = 'high';
+				highOpt.textContent = 'High';
+				highOpt.selected = task.importance === 'high';
+				impSelect.appendChild(highOpt);
+				
+				const medOpt = document.createElement('option');
+				medOpt.value = 'med';
+				medOpt.textContent = 'Med';
+				medOpt.selected = task.importance === 'med';
+				impSelect.appendChild(medOpt);
+				
+				const lowOpt = document.createElement('option');
+				lowOpt.value = 'low';
+				lowOpt.textContent = 'Low';
+				lowOpt.selected = task.importance === 'low';
+				impSelect.appendChild(lowOpt);
+				
+				impSelect.addEventListener('change', (e) => {
+					const newImp = e.target.value || null;
+					task.importance = newImp;
+					saveTasks();
+					renderTasks();
+					renderDayTasks();
+				});
+				li.appendChild(impSelect);
+				
 				ul.appendChild(li);
 			});
 			container.appendChild(ul);
@@ -249,7 +291,14 @@ document.addEventListener('DOMContentLoaded', () => {
 		function addTaskWithDate(text, ymd) {
 			const trimmed = String(text || '').trim();
 			if (!trimmed) return;
-			const task = { id: Date.now(), text: trimmed, completed: false, createdAt: Date.now(), dueDate: ymd || null };
+			
+			// Parse keywords from task text
+			const { cleanText, dueDate: parsedDate } = parseTaskKeywords(trimmed);
+			if (!cleanText) return; // if all text was keywords, skip
+
+			// Use parsed date if available, otherwise use the provided date (from calendar)
+			const finalDate = parsedDate || ymd || null;
+			const task = { id: Date.now(), text: cleanText, completed: false, createdAt: Date.now(), dueDate: finalDate, importance: null };
 			tasks.unshift(task);
 			saveTasks();
 			renderTasks();
@@ -316,6 +365,8 @@ document.addEventListener('DOMContentLoaded', () => {
 			const li = document.createElement('li');
 			li.className = 'task-item';
 			if (task.completed) li.classList.add('completed');
+			if (task.importance === 'high') li.classList.add('importance-high');
+			else if (task.importance === 'low') li.classList.add('importance-low');
 
 			// checkbox
 			const checkbox = document.createElement('input');
@@ -333,6 +384,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
 			li.appendChild(checkbox);
 			li.appendChild(label);
+			
+			// importance dropdown
+			const impSelect = document.createElement('select');
+			impSelect.className = 'task-importance-select';
+			impSelect.dataset.id = task.id;
+			
+			const noneOpt = document.createElement('option');
+			noneOpt.value = '';
+			noneOpt.textContent = '—';
+			noneOpt.selected = !task.importance;
+			impSelect.appendChild(noneOpt);
+			
+			const highOpt = document.createElement('option');
+			highOpt.value = 'high';
+			highOpt.textContent = 'High';
+			highOpt.selected = task.importance === 'high';
+			impSelect.appendChild(highOpt);
+			
+			const medOpt = document.createElement('option');
+			medOpt.value = 'med';
+			medOpt.textContent = 'Med';
+			medOpt.selected = task.importance === 'med';
+			impSelect.appendChild(medOpt);
+			
+			const lowOpt = document.createElement('option');
+			lowOpt.value = 'low';
+			lowOpt.textContent = 'Low';
+			lowOpt.selected = task.importance === 'low';
+			impSelect.appendChild(lowOpt);
+			
+			impSelect.addEventListener('change', (e) => {
+				const newImp = e.target.value || null;
+				task.importance = newImp;
+				saveTasks();
+				renderTasks();
+			});
+			li.appendChild(impSelect);
+			
 			// date badge or 'add date' affordance
 			if (task.dueDate) {
 				const badge = document.createElement('span');
@@ -340,6 +429,12 @@ document.addEventListener('DOMContentLoaded', () => {
 				badge.tabIndex = 0;
 				badge.title = new Date(task.dueDate).toLocaleDateString();
 				badge.textContent = formatTaskDateDisplay(task.dueDate);
+				
+				// Apply red color if task is overdue
+				if (isTaskOverdue(task)) {
+					badge.style.color = '#ff6b6b';
+				}
+				
 				// click or Enter on badge to edit
 				badge.addEventListener('click', () => startEditingDate(task));
 				badge.addEventListener('keydown', (e) => { if (e.key === 'Enter') startEditingDate(task); });
@@ -389,11 +484,87 @@ document.addEventListener('DOMContentLoaded', () => {
 		});
 	}
 
+	function parseTaskKeywords(text) {
+		// Extract keywords starting with ! and return { cleanText, dueDate }
+		const keywordRegex = /\s*!(\w+)/g;
+		let cleanText = text;
+		let dueDate = null;
+		let match;
+
+		while ((match = keywordRegex.exec(text)) !== null) {
+			const keyword = match[1].toLowerCase();
+			cleanText = cleanText.replace(match[0], ''); // remove keyword from text
+
+			// Parse date keywords
+			if (keyword === 'today') {
+				dueDate = ymdFromDate(now);
+			} else if (keyword === 'tomorrow') {
+				const tomorrow = new Date(now);
+				tomorrow.setDate(tomorrow.getDate() + 1);
+				dueDate = ymdFromDate(tomorrow);
+			} else if (keyword === 'monday' || keyword === 'mon') {
+				const d = new Date(now);
+				const day = d.getDay();
+				const daysUntilMonday = (1 - day + 7) % 7 || 7;
+				d.setDate(d.getDate() + daysUntilMonday);
+				dueDate = ymdFromDate(d);
+			} else if (keyword === 'tuesday' || keyword === 'tue') {
+				const d = new Date(now);
+				const day = d.getDay();
+				const daysUntilTuesday = (2 - day + 7) % 7 || 7;
+				d.setDate(d.getDate() + daysUntilTuesday);
+				dueDate = ymdFromDate(d);
+			} else if (keyword === 'wednesday' || keyword === 'wed') {
+				const d = new Date(now);
+				const day = d.getDay();
+				const daysUntilWednesday = (3 - day + 7) % 7 || 7;
+				d.setDate(d.getDate() + daysUntilWednesday);
+				dueDate = ymdFromDate(d);
+			} else if (keyword === 'thursday' || keyword === 'thu') {
+				const d = new Date(now);
+				const day = d.getDay();
+				const daysUntilThursday = (4 - day + 7) % 7 || 7;
+				d.setDate(d.getDate() + daysUntilThursday);
+				dueDate = ymdFromDate(d);
+			} else if (keyword === 'friday' || keyword === 'fri') {
+				const d = new Date(now);
+				const day = d.getDay();
+				const daysUntilFriday = (5 - day + 7) % 7 || 7;
+				d.setDate(d.getDate() + daysUntilFriday);
+				dueDate = ymdFromDate(d);
+			} else if (keyword === 'saturday' || keyword === 'sat') {
+				const d = new Date(now);
+				const day = d.getDay();
+				const daysUntilSaturday = (6 - day + 7) % 7 || 7;
+				d.setDate(d.getDate() + daysUntilSaturday);
+				dueDate = ymdFromDate(d);
+			} else if (keyword === 'sunday' || keyword === 'sun') {
+				const d = new Date(now);
+				const day = d.getDay();
+				const daysUntilSunday = (0 - day + 7) % 7 || 7;
+				d.setDate(d.getDate() + daysUntilSunday);
+				dueDate = ymdFromDate(d);
+			} else if (keyword === 'nextweek') {
+				const d = new Date(now);
+				d.setDate(d.getDate() + 7);
+				dueDate = ymdFromDate(d);
+			}
+		}
+
+		cleanText = cleanText.trim();
+		return { cleanText, dueDate };
+	}
+
 	function addTask(text) {
 		const trimmed = String(text || '').trim();
 		if (!trimmed) return;
-		// due date is optional and can be added inline after creation
-		const task = { id: Date.now(), text: trimmed, completed: false, createdAt: Date.now(), dueDate: null };
+		
+		// Parse keywords from task text
+		const { cleanText, dueDate } = parseTaskKeywords(trimmed);
+		if (!cleanText) return; // if all text was keywords, skip
+
+		// Create task with parsed dueDate and no importance by default
+		const task = { id: Date.now(), text: cleanText, completed: false, createdAt: Date.now(), dueDate: dueDate || null, importance: null };
 		tasks.unshift(task);
 		saveTasks();
 		renderTasks();
@@ -433,6 +604,26 @@ document.addEventListener('DOMContentLoaded', () => {
 		const d = parseDateYMD(ymd);
 		if (!d) return '';
 		const today = new Date();
+		
+		// Normalize dates to compare just the day part
+		const todayYMD = ymdFromDate(today);
+		const yesterday = new Date(today);
+		yesterday.setDate(yesterday.getDate() - 1);
+		const yesterdayYMD = ymdFromDate(yesterday);
+		const tomorrow = new Date(today);
+		tomorrow.setDate(tomorrow.getDate() + 1);
+		const tomorrowYMD = ymdFromDate(tomorrow);
+		
+		// Check for Today, Tomorrow, Yesterday
+		if (ymd === todayYMD) {
+			return 'Today';
+		} else if (ymd === tomorrowYMD) {
+			return 'Tomorrow';
+		} else if (ymd === yesterdayYMD) {
+			return 'Yesterday';
+		}
+		
+		// For other dates, show weekday if in same week, otherwise show month/day
 		const inSameWeek = startOfWeekMon(d).getTime() === startOfWeekMon(today).getTime();
 		const day = d.getDay(); // 0 Sun .. 6 Sat
 		const weekdayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -441,6 +632,14 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 		// else show month day
 		return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+	}
+	
+	function isTaskOverdue(task) {
+		// A task is overdue if it's not completed and the due date is in the past
+		if (task.completed || !task.dueDate) return false;
+		const today = new Date();
+		const todayYMD = ymdFromDate(today);
+		return task.dueDate < todayYMD;
 	}
 
 	// load & initial render

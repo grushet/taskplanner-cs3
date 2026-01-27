@@ -124,6 +124,60 @@ html, body {height:100%}
     color: #9e9e9e;
 }
 
+/* Importance dropdown styling for day tasks */
+.day-tasks .task-importance-select {
+	margin-left: auto;
+	padding: 4px 6px;
+	font-size: 0.7rem;
+	font-weight: 600;
+	border-radius: 4px;
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	background: rgba(255, 255, 255, 0.06);
+	color: #b8b8b8;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	appearance: none;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%23b8b8b8' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 3px center;
+	padding-right: 16px;
+}
+
+.day-tasks .task-importance-select:hover {
+	background-color: rgba(255, 255, 255, 0.1);
+	border-color: rgba(255, 255, 255, 0.25);
+}
+
+.day-tasks .task-importance-select:focus {
+	outline: none;
+	box-shadow: 0 0 0 2px rgba(100, 180, 200, 0.2);
+}
+
+/* Importance color coding for day task dropdown */
+.day-tasks .day-task-item.importance-high .task-importance-select {
+	background-color: rgba(255, 76, 76, 0.15);
+	color: #ff8a8a;
+	border-color: rgba(255, 76, 76, 0.25);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%23ff8a8a' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+}
+
+.day-tasks .day-task-item.importance-high .task-importance-select:hover {
+	background-color: rgba(255, 76, 76, 0.25);
+	border-color: rgba(255, 76, 76, 0.4);
+}
+
+.day-tasks .day-task-item.importance-low .task-importance-select {
+	background-color: rgba(100, 180, 200, 0.1);
+	color: #8dd9ff;
+	border-color: rgba(100, 180, 200, 0.2);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%238dd9ff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+}
+
+.day-tasks .day-task-item.importance-low .task-importance-select:hover {
+	background-color: rgba(100, 180, 200, 0.2);
+	border-color: rgba(100, 180, 200, 0.35);
+}
+
 /* selected calendar day */
 .calendar-day.selected-day{
     border-radius: 15px;
@@ -313,6 +367,66 @@ html, body {height:100%}
 }
 
 .task-item .task-label{ word-break: break-word; }
+
+/* Importance dropdown */
+.task-importance-select {
+	margin-left: auto;
+	padding: 6px 8px;
+	font-size: 0.75rem;
+	font-weight: 600;
+	border-radius: 6px;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	background: rgba(255, 255, 255, 0.08);
+	color: #cfcfcf;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	appearance: none;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23cfcfcf' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 4px center;
+	padding-right: 20px;
+}
+
+.task-importance-select:hover {
+	background-color: rgba(255, 255, 255, 0.12);
+	border-color: rgba(255, 255, 255, 0.3);
+}
+
+.task-importance-select:focus {
+	outline: none;
+	box-shadow: 0 0 0 2px rgba(100, 180, 200, 0.3);
+}
+
+/* Importance color coding for dropdown */
+.task-item.importance-high .task-importance-select {
+	background-color: rgba(255, 76, 76, 0.2);
+	color: #ff6b6b;
+	border-color: rgba(255, 76, 76, 0.3);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ff6b6b' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+}
+
+.task-item.importance-high .task-importance-select:hover {
+	background-color: rgba(255, 76, 76, 0.3);
+	border-color: rgba(255, 76, 76, 0.5);
+}
+
+.task-item.importance-low .task-importance-select {
+	background-color: rgba(100, 180, 200, 0.15);
+	color: #7dd3ff;
+	border-color: rgba(100, 180, 200, 0.3);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237dd3ff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+}
+
+.task-item.importance-low .task-importance-select:hover {
+	background-color: rgba(100, 180, 200, 0.25);
+	border-color: rgba(100, 180, 200, 0.5);
+}
+
+.task-importance-select option {
+	background: #333;
+	color: #fff;
+	padding: 4px 8px;
+}
 
 /* date badge rendered in the task item */
 .task-date-badge{
