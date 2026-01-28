@@ -676,4 +676,189 @@ document.addEventListener('DOMContentLoaded', () => {
 		});
 	}
 
+	// ===== Pomodoro Timer Integration ===== 
+	// Only initialize if pomodoro elements exist on the page
+	const pomoTimerEl = document.getElementById('pomodoro-timer');
+	if (pomoTimerEl) {
+		const POMO_SETTINGS_KEY = 'pomoSettings';
+		const POMO_STATE_KEY = 'pomoState';
+
+		const btnStart = document.getElementById('pomo-start');
+		const btnPause = document.getElementById('pomo-pause');
+		const btnReset = document.getElementById('pomo-reset');
+		const btnSkip = document.getElementById('pomo-skip');
+		const inputWork = document.getElementById('pomo-work');
+		const inputShort = document.getElementById('pomo-short');
+		const inputLong = document.getElementById('pomo-long');
+		const inputSessions = document.getElementById('pomo-sessions');
+		const displayCurrent = document.getElementById('pomo-current');
+		const displayTotal = document.getElementById('pomo-total');
+
+		let settings = { work: 25, short: 5, long: 15, sessions: 4 };
+		let state = { mode: 'work', remaining: settings.work * 60, currentSession: 0, running: false };
+		let intervalId = null;
+
+		function loadSettings() {
+			try {
+				const raw = localStorage.getItem(POMO_SETTINGS_KEY);
+				if (raw) settings = Object.assign(settings, JSON.parse(raw));
+			} catch (e) { /* ignore */ }
+		}
+
+		function saveSettings() {
+			try { localStorage.setItem(POMO_SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
+		}
+
+		function loadState() {
+			try {
+				const raw = localStorage.getItem(POMO_STATE_KEY);
+				if (raw) {
+					const s = JSON.parse(raw);
+					state = Object.assign(state, s);
+				}
+			} catch (e) { /* ignore */ }
+		}
+
+		function saveState() {
+			try { localStorage.setItem(POMO_STATE_KEY, JSON.stringify(state)); } catch (e) {}
+		}
+
+		function formatTime(sec) {
+			const m = Math.floor(sec / 60);
+			const s = sec % 60;
+			return `${m}:${String(s).padStart(2, '0')}`;
+		}
+
+		function setRemainingFromMode() {
+			if (state.mode === 'work') state.remaining = Math.max(1, settings.work) * 60;
+			else if (state.mode === 'short') state.remaining = Math.max(1, settings.short) * 60;
+			else state.remaining = Math.max(1, settings.long) * 60;
+		}
+
+		function updateUI() {
+			pomoTimerEl.textContent = formatTime(state.remaining);
+			displayCurrent && (displayCurrent.textContent = state.currentSession);
+			displayTotal && (displayTotal.textContent = settings.sessions);
+			// disable inputs while running
+			const disabled = !!state.running;
+			[inputWork, inputShort, inputLong, inputSessions].forEach(i => { if (i) i.disabled = disabled; });
+		}
+
+		function tick() {
+			if (state.remaining > 0) {
+				state.remaining -= 1;
+				updateUI();
+				saveState();
+			} else {
+				// period ended
+				clearInterval(intervalId);
+				intervalId = null;
+				state.running = false;
+				handlePeriodEnd();
+			}
+		}
+
+		function startTimer() {
+			if (intervalId) return; // already running
+			state.running = true;
+			intervalId = setInterval(tick, 1000);
+			updateUI();
+			saveState();
+		}
+
+		function pauseTimer() {
+			if (intervalId) {
+				clearInterval(intervalId);
+				intervalId = null;
+			}
+			state.running = false;
+			updateUI();
+			saveState();
+		}
+
+		function resetTimer() {
+			pauseTimer();
+			state.mode = 'work';
+			state.currentSession = 0;
+			setRemainingFromMode();
+			updateUI();
+			saveState();
+		}
+
+		function handlePeriodEnd() {
+			// simple visual flash using body class
+			document.body.classList.add('pomo-flash');
+			setTimeout(() => document.body.classList.remove('pomo-flash'), 600);
+
+			// remember which mode just finished (work/short/long)
+			const finishedMode = state.mode;
+
+			if (finishedMode === 'work') {
+				state.currentSession = (state.currentSession || 0) + 1;
+				// if finished cycle -> long break, otherwise short break
+				if (state.currentSession % settings.sessions === 0) {
+					state.mode = 'long';
+				} else {
+					state.mode = 'short';
+				}
+			} else {
+				// a break just finished — if it was a long break, we've completed a full cycle
+				if (finishedMode === 'long') {
+					// reset session counter so the next cycle starts at 0
+					state.currentSession = 0;
+				}
+				state.mode = 'work';
+			}
+			setRemainingFromMode();
+			// auto-start next period
+			startTimer();
+			saveState();
+		}
+
+		function skipPhase() {
+			// Immediately end current period and move to next. Auto-starts next period.
+			if (intervalId) {
+				clearInterval(intervalId);
+				intervalId = null;
+			}
+			state.running = false;
+			saveState();
+			// set remaining to 0 so handlePeriodEnd treats it as finished
+			state.remaining = 0;
+			handlePeriodEnd();
+		}
+
+		// Wire UI events
+		btnStart && btnStart.addEventListener('click', (e) => { e.preventDefault(); startTimer(); });
+		btnPause && btnPause.addEventListener('click', (e) => { e.preventDefault(); pauseTimer(); });
+		btnReset && btnReset.addEventListener('click', (e) => { e.preventDefault(); resetTimer(); });
+		btnSkip && btnSkip.addEventListener('click', (e) => { e.preventDefault(); skipPhase(); });
+
+		[inputWork, inputShort, inputLong, inputSessions].forEach(inp => {
+			if (!inp) return;
+			inp.addEventListener('change', () => {
+				// read all values
+				settings.work = Math.max(1, parseInt(inputWork.value, 10) || 25);
+				settings.short = Math.max(1, parseInt(inputShort.value, 10) || 5);
+				settings.long = Math.max(1, parseInt(inputLong.value, 10) || 15);
+				settings.sessions = Math.max(1, parseInt(inputSessions.value, 10) || 4);
+				saveSettings();
+				// if not running, update remaining to reflect mode change
+				if (!state.running) setRemainingFromMode();
+				updateUI();
+			});
+		});
+
+		// Initialize
+		loadSettings();
+		loadState();
+		// merge loaded settings into inputs
+		if (inputWork) inputWork.value = settings.work;
+		if (inputShort) inputShort.value = settings.short;
+		if (inputLong) inputLong.value = settings.long;
+		if (inputSessions) inputSessions.value = settings.sessions;
+		if (!state.remaining) setRemainingFromMode();
+		updateUI();
+	}
+
 });

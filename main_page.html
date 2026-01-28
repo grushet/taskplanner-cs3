@@ -7,7 +7,45 @@
     <title>Task Planner</title>
     <link rel="stylesheet" href="styles.css" />
     <style>
-        
+        /* Pomodoro panel styles (dark-theme, matching site) */
+        .pomodoro-panel {
+            max-width: 720px;
+            margin: 18px auto 40px;
+            background: rgba(0,0,0,0.45);
+            border: 1px solid rgba(255,255,255,0.04);
+            padding: 22px;
+            border-radius: 12px;
+            color: inherit;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            font-family: inherit;
+        }
+
+        .pomodoro-top { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+        .timer-display {
+            font-size: 56px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            background: linear-gradient(90deg,#80deea,#b3e5fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .pomodoro-controls .btn { margin-left: 8px; padding: 10px 14px; border-radius: 8px; border: none; cursor: pointer; font-weight:700; transition: all 0.15s ease; }
+        .pomodoro-controls .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .pomodoro-controls .btn:active { transform: scale(0.95); }
+        /* Make Start match Pause/Reset for consistent visibility */
+        .pomodoro-controls .start { background: rgba(255,255,255,0.08); color:var(--text-color) }
+        .pomodoro-controls .pause { background: rgba(255,255,255,0.08); color:var(--text-color) }
+        .pomodoro-controls .reset { background: rgba(255,255,255,0.06); color:var(--text-color) }
+        .pomodoro-controls .skip { background: rgba(255,255,255,0.08); color:var(--text-color) }
+
+        .pomodoro-settings { display:flex; gap:12px; flex-wrap:wrap; margin-top:16px; }
+        .pomodoro-settings label { font-size:0.95rem; color: rgba(232,238,242,0.85); }
+        .pomodoro-settings input { width:72px; margin-left:8px; padding:6px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.03); color:var(--text-color); }
+
+        .pomodoro-footer { display:flex; justify-content:space-between; align-items:center; margin-top:14px; color:rgba(232,238,242,0.75); }
+        .pomodoro-progress { font-weight:700 }
+        .pomodoro-note { font-size:0.9rem }
     </style>
 
 </head>
@@ -29,6 +67,7 @@
                 <a href="#" class="nav-link" data-target="page-home">Home</a>
                 <a href="#" class="nav-link" data-target="page-tasks">Tasks</a>
                 <a href="#" class="nav-link" data-target="page-calendar">Calendar</a>
+                <a href="#" class="nav-link" data-target="page-pomodoro">Pomodoro Timer</a>
                 <a href="#" class="nav-link" data-target="page-sat">SAT Helper</a>
             </nav>
         </aside>
@@ -75,6 +114,33 @@
                 </div>
                 <div id="day-tasks" class="day-tasks">
                     <!-- Tasks for the selected day will be rendered here -->
+                </div>
+            </section>
+
+            <section id="page-pomodoro" class="page">
+                <h2>Pomodoro Timer</h2>
+                <div class="pomodoro-panel">
+                    <div class="pomodoro-top">
+                        <div class="timer-display" id="pomodoro-timer" aria-live="polite">25:00</div>
+                        <div class="pomodoro-controls">
+                                <button class="btn start" id="pomo-start">Start</button>
+                                <button class="btn pause" id="pomo-pause">Pause</button>
+                                <button class="btn reset" id="pomo-reset">Reset</button>
+                                <button class="btn skip" id="pomo-skip" title="Skip to next phase">Skip</button>
+                        </div>
+                    </div>
+
+                    <div class="pomodoro-settings">
+                        <label>Work (min): <input id="pomo-work" type="number" min="1" value="25"></label>
+                        <label>Short Break (min): <input id="pomo-short" type="number" min="1" value="5"></label>
+                        <label>Long Break (min): <input id="pomo-long" type="number" min="1" value="15"></label>
+                        <label>Sessions / cycle: <input id="pomo-sessions" type="number" min="1" value="4"></label>
+                    </div>
+
+                    <div class="pomodoro-footer">
+                        <div class="pomodoro-progress">Session <span id="pomo-current">0</span> / <span id="pomo-total">4</span></div>
+                        
+                    </div>
                 </div>
             </section>
 
