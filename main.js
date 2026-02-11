@@ -687,6 +687,9 @@ document.addEventListener('DOMContentLoaded', () => {
 		const btnPause = document.getElementById('pomo-pause');
 		const btnReset = document.getElementById('pomo-reset');
 		const btnSkip = document.getElementById('pomo-skip');
+		// circular progress elements (if present)
+		const progressCircle = document.querySelector('.progress-ring__progress');
+		const pomoModeEl = document.getElementById('pomo-mode');
 		const inputWork = document.getElementById('pomo-work');
 		const inputShort = document.getElementById('pomo-short');
 		const inputLong = document.getElementById('pomo-long');
@@ -735,10 +738,40 @@ document.addEventListener('DOMContentLoaded', () => {
 			else state.remaining = Math.max(1, settings.long) * 60;
 		}
 
+		function updateCircle(remaining, total, mode) {
+			if (!progressCircle || !total) return;
+			try {
+				const radius = progressCircle.r.baseVal.value;
+				const circumference = 2 * Math.PI * radius;
+				progressCircle.style.transition = 'stroke-dashoffset 1s linear, stroke 0.25s ease';
+				progressCircle.style.strokeDasharray = `${circumference}`;
+				const fraction = Math.max(0, Math.min(1, remaining / total));
+				const offset = circumference * (1 - fraction);
+				progressCircle.style.strokeDashoffset = String(offset);
+				// color by mode
+				if (mode === 'work') progressCircle.style.stroke = '#80deea';
+				else if (mode === 'short') progressCircle.style.stroke = '#fbbf24';
+				else progressCircle.style.stroke = '#ef4444';
+			} catch (e) {
+				// ignore if DOM not ready
+			}
+		}
+
 		function updateUI() {
 			pomoTimerEl.textContent = formatTime(state.remaining);
+			// update center mode label
+			if (pomoModeEl) {
+				if (state.mode === 'work') pomoModeEl.textContent = 'Work';
+				else if (state.mode === 'short') pomoModeEl.textContent = 'Short Break';
+				else pomoModeEl.textContent = 'Long Break';
+			}
 			displayCurrent && (displayCurrent.textContent = state.currentSession);
 			displayTotal && (displayTotal.textContent = settings.sessions);
+			// update circular progress ring if present
+			if (progressCircle) {
+				const total = state.mode === 'work' ? settings.work * 60 : (state.mode === 'short' ? settings.short * 60 : settings.long * 60);
+				updateCircle(state.remaining, total, state.mode);
+			}
 			// disable inputs while running
 			const disabled = !!state.running;
 			[inputWork, inputShort, inputLong, inputSessions].forEach(i => { if (i) i.disabled = disabled; });

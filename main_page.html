@@ -20,24 +20,39 @@
             font-family: inherit;
         }
 
-        .pomodoro-top { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+        .pomodoro-top { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+
+        /* Circular timer container */
+        .pomodoro-circle { position: relative; width: 180px; height: 180px; display:flex; align-items:center; justify-content:center; }
+
+        .progress-ring { transform: rotate(-90deg); }
+
+        .progress-ring__bg { opacity: 0.8; }
+
+        .progress-ring__progress { transition: stroke-dashoffset 1s linear, stroke 0.25s ease; transform-origin: 50% 50%; }
+
+        .pomodoro-center { position: absolute; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none; }
+
+        .pomo-mode { font-size: 0.85rem; font-weight:700; color: var(--text-secondary, #cbd5e1); margin-bottom:6px; text-transform:uppercase; letter-spacing:1px; }
+
         .timer-display {
-            font-size: 56px;
-            font-weight: 800;
+            font-size: 34px;
+            font-weight: 900;
             letter-spacing: 1px;
             background: linear-gradient(90deg,#80deea,#b3e5fc);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        .pomodoro-controls .btn { margin-left: 8px; padding: 10px 14px; border-radius: 8px; border: none; cursor: pointer; font-weight:700; transition: all 0.15s ease; }
-        .pomodoro-controls .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-        .pomodoro-controls .btn:active { transform: scale(0.95); }
-        /* Make Start match Pause/Reset for consistent visibility */
-        .pomodoro-controls .start { background: rgba(255,255,255,0.08); color:var(--text-color) }
-        .pomodoro-controls .pause { background: rgba(255,255,255,0.08); color:var(--text-color) }
-        .pomodoro-controls .reset { background: rgba(255,255,255,0.06); color:var(--text-color) }
-        .pomodoro-controls .skip { background: rgba(255,255,255,0.08); color:var(--text-color) }
+        /* Larger, more prominent buttons */
+        .pomodoro-controls .btn { margin-left: 8px; padding: 12px 18px; border-radius: 10px; border: none; cursor: pointer; font-weight:800; transition: all 0.15s ease; font-size: 0.95rem; min-width: 88px; }
+        .pomodoro-controls .btn:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.35); }
+        .pomodoro-controls .btn:active { transform: scale(0.96); }
+        /* Make Start/Pause/Skip match Reset for consistent visibility */
+        .pomodoro-controls .start { background: rgba(255,255,255,0.08); color:var(--text-color); }
+        .pomodoro-controls .pause { background: rgba(255,255,255,0.08); color:var(--text-color); }
+        .pomodoro-controls .reset { background: rgba(255,255,255,0.06); color:var(--text-color); }
+        .pomodoro-controls .skip { background: rgba(255,255,255,0.08); color:var(--text-color); }
 
         .pomodoro-settings { display:flex; gap:12px; flex-wrap:wrap; margin-top:16px; }
         .pomodoro-settings label { font-size:0.95rem; color: rgba(232,238,242,0.85); }
@@ -121,7 +136,17 @@
                 <h2>Pomodoro Timer</h2>
                 <div class="pomodoro-panel">
                     <div class="pomodoro-top">
-                        <div class="timer-display" id="pomodoro-timer" aria-live="polite">25:00</div>
+                        <div class="pomodoro-circle" aria-live="polite">
+                            <svg class="progress-ring" width="180" height="180" viewBox="0 0 180 180">
+                                <circle class="progress-ring__bg" cx="90" cy="90" r="76" stroke-width="12" fill="none" stroke="rgba(255,255,255,0.06)" />
+                                <circle class="progress-ring__progress" cx="90" cy="90" r="76" stroke-width="12" fill="none" stroke-linecap="round" stroke="rgba(128,222,234,0.95)" stroke-dasharray="477" stroke-dashoffset="0" />
+                            </svg>
+                            <div class="pomodoro-center">
+                                <div id="pomo-mode" class="pomo-mode">Work</div>
+                                <div id="pomodoro-timer" class="timer-display">25:00</div>
+                            </div>
+                        </div>
+
                         <div class="pomodoro-controls">
                                 <button class="btn start" id="pomo-start">Start</button>
                                 <button class="btn pause" id="pomo-pause">Pause</button>
@@ -134,7 +159,7 @@
                         <label>Work (min): <input id="pomo-work" type="number" min="1" value="25"></label>
                         <label>Short Break (min): <input id="pomo-short" type="number" min="1" value="5"></label>
                         <label>Long Break (min): <input id="pomo-long" type="number" min="1" value="15"></label>
-                        <label>Sessions / cycle: <input id="pomo-sessions" type="number" min="1" value="4"></label>
+                        <label>Sessions: <input id="pomo-sessions" type="number" min="1" value="4"></label>
                     </div>
 
                     <div class="pomodoro-footer">
